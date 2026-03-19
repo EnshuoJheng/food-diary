@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>吃什麼 🍱</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <!-- Firebase SDK (不需要 Storage 了) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --cream:      #FDF6EC;
+      --cream-dark: #F5EAD8;
+      --warm:       #D97B4F;
+      --warm-lt:    #EDAA80;
+      --sage:       #7A9E7E;
+      --sage-lt:    #B5CDB4;
+      --text:       #3A2E24;
+      --text-md:    #6B5A4E;
+      --text-lt:    #9E897C;
+      --card:       #FFFDF8;
+      --border:     #EBD9C5;
+      --shadow-sm:  0 1px 6px rgba(58,46,36,0.07);
+      --shadow-md:  0 4px 18px rgba(58,46,36,0.10);
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      background: var(--cream);
+      color: var(--text);
+      font-family: 'Noto Sans TC', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    .screen { display:none; }
+    .screen.active { display:flex; flex-direction:column; min-height:100vh; min-height:100dvh; }
+
+    /* ══ PICKER ══ */
+    #picker-screen {
+      align-items: center; justify-content: center;
+      padding: 40px 28px; position: relative; overflow: hidden;
+    }
+    #picker-screen::before, #picker-screen::after {
+      content: ''; position: absolute; border-radius: 50%; z-index: 0;
+    }
+    #picker-screen::before {
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(217,123,79,0.12), transparent 70%);
+      top: -80px; right: -80px;
+    }
+    #picker-screen::after {
+      width: 260px; height: 260px;
+      background: radial-gradient(circle, rgba(122,158,126,0.10), transparent 70%);
+      bottom: -60px; left: -60px;
+    }
+
+    .picker-inner { position:relative; z-index:1; text-align:center; width:100%; max-width:320px; }
+
+    .picker-emoji {
+      font-size: 3.2rem; margin-bottom: 12px; display: block;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-8px); }
+    }
+
+    .picker-title { font-family: 'Noto Serif TC', serif; font-size: 2rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .picker-sub   { color: var(--text-lt); font-size: 0.88rem; margin-bottom: 44px; }
+
+    .user-cards { display:flex; flex-direction:column; gap:14px; }
+
+    .user-card {
+      background: var(--card); border: 1.5px solid var(--border);
+      border-radius: 18px; padding: 18px 20px; cursor: pointer;
+      display: flex; align-items: center; gap: 14px;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      box-shadow: var(--shadow-sm); -webkit-tap-highlight-color: transparent;
+    }
+    .user-card:active { transform: scale(0.97); border-color: var(--warm); box-shadow: var(--shadow-md); }
+
+    .user-avatar {
+      width: 52px; height: 52px; border-radius: 50%;
+      display: flex; align-items:center; justify-content:center;
+      font-size: 1.5rem; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    }
+    .avatar-warm { background: linear-gradient(135deg, #F0A97A, #D97B4F); }
+    .avatar-sage  { background: linear-gradient(135deg, #B5CDB4, #7A9E7E); }
+
+    .user-card-text { text-align:left; }
+    .user-card-name { font-size: 1.1rem; font-weight: 500; color: var(--text); }
+    .user-card-hint { font-size: 0.78rem; color: var(--text-lt); margin-top: 2px; }
+
+    .edit-names-btn {
+      margin-top: 28px; background: none; border: none;
+      color: var(--text-lt); font-size: 0.82rem;
+      font-family: 'Noto Sans TC', sans-serif;
+      cursor: pointer; padding: 6px 10px; border-radius: 8px; transition: color 0.2s;
+    }
+    .edit-names-btn:hover { color: var(--text-md); }
+
+    /* ══ MAIN ══ */
+    #main-screen { padding-bottom: 90px; }
+
+    .header {
+      position: sticky; top: 0; z-index: 20;
+      background: var(--cream); padding: 16px 20px 0;
+      border-bottom: 1px solid transparent; transition: border-color 0.2s;
+    }
+    .header.scrolled { border-bottom-color: var(--border); }
+
+    .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .header-title { font-family: 'Noto Serif TC', serif; font-size: 1.5rem; font-weight: 700; }
+
+    .user-chip {
+      display: flex; align-items: center; gap: 7px;
+      background: var(--card); border: 1.5px solid var(--border);
+      border-radius: 20px; padding: 5px 12px 5px 6px;
+      cursor: pointer; transition: border-color 0.2s; -webkit-tap-highlight-color: transparent;
+    }
+    .user-chip:active { border-color: var(--warm); }
+    .user-chip-dot { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items:center; justify-content:center; font-size: 0.9rem; }
+    .user-chip-name { font-size: 0.85rem; font-weight: 500; color: var(--text); }
+
+    .view-toggle {
+      display: flex; background: var(--card); border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 4px; margin-bottom: 16px; gap: 4px;
+    }
+    .toggle-btn {
+      flex: 1; padding: 8px 6px; border: none; background: transparent;
+      border-radius: 8px; font-size: 0.84rem; font-family: 'Noto Sans TC', sans-serif;
+      font-weight: 400; color: var(--text-lt); cursor: pointer; transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .toggle-btn.active { background: var(--warm); color: #fff; font-weight: 500; box-shadow: 0 2px 8px rgba(217,123,79,0.30); }
+
+    /* Feed */
+    .feed { padding: 4px 20px 0; }
+    .date-group { margin-bottom: 28px; }
+
+    .date-label {
+      font-size: 0.76rem; color: var(--text-lt);
+      letter-spacing: 0.08em; margin-bottom: 10px; padding-left: 2px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .date-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    .meal-card {
+      background: var(--card); border-radius: 16px;
+      margin-bottom: 10px; box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; padding: 14px 16px; gap: 12px;
+    }
+
+    .meal-icon {
+      font-size: 1.6rem; flex-shrink: 0; width: 46px; height: 46px;
+      background: var(--cream-dark); border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .meal-info { flex: 1; min-width: 0; }
+    .meal-name { font-size: 1rem; font-weight: 500; color: var(--text); }
+    .meal-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; flex-wrap: wrap; }
+    .meal-time { font-size: 0.76rem; color: var(--text-lt); }
+    .meal-user-tag {
+      font-size: 0.72rem; background: var(--cream-dark);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 2px 8px; color: var(--text-md); white-space: nowrap;
+    }
+
+    .state-msg { text-align: center; padding: 64px 20px; color: var(--text-lt); }
+    .state-emoji { font-size: 2.8rem; margin-bottom: 14px; }
+    .state-text  { font-size: 0.9rem; line-height: 1.6; }
+
+    /* FAB */
+    .fab {
+      position: fixed; bottom: 28px; right: 24px;
+      width: 62px; height: 62px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--warm), var(--warm-lt));
+      border: none; cursor: pointer; display: none;
+      align-items: center; justify-content: center;
+      font-size: 1.8rem; line-height: 1;
+      box-shadow: 0 6px 20px rgba(217,123,79,0.45);
+      z-index: 30; transition: transform 0.15s, box-shadow 0.15s;
+      -webkit-tap-highlight-color: transparent; color: white;
+    }
+    .fab.visible { display:flex; }
+    .fab:active { transform: scale(0.92); box-shadow: 0 3px 10px rgba(217,123,79,0.35); }
+
+    /* ══ MODAL ══ */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(40,28,20,0.45); z-index: 100;
+      backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    }
+    .overlay.show { display:flex; align-items:flex-end; justify-content:center; }
+
+    .sheet {
+      width: 100%; max-width: 480px; background: var(--card);
+      border-radius: 24px 24px 0 0; padding: 20px 24px 48px;
+      animation: slideUp 0.3s cubic-bezier(0.32,0.72,0,1);
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity:0; }
+      to   { transform: translateY(0);    opacity:1; }
+    }
+
+    .sheet-handle { width: 38px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+    .sheet-title { font-family: 'Noto Serif TC', serif; font-size: 1.35rem; font-weight: 700; margin-bottom: 22px; }
+
+    .form-label { display: block; font-size: 0.80rem; color: var(--text-md); margin-bottom: 7px; letter-spacing: 0.04em; }
+
+    .form-input {
+      width: 100%; padding: 14px 16px; border: 1.5px solid var(--border);
+      border-radius: 13px; font-size: 1rem; font-family: 'Noto Sans TC', sans-serif;
+      background: var(--cream); color: var(--text);
+      outline: none; transition: border-color 0.2s; margin-bottom: 20px;
+    }
+    .form-input:focus { border-color: var(--warm); }
+
+    .emoji-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
+    .emoji-btn {
+      width: 46px; height: 46px; border-radius: 12px;
+      background: var(--cream); border: 1.5px solid var(--border);
+      font-size: 1.4rem; cursor: pointer; transition: all 0.15s;
+      display: flex; align-items:center; justify-content:center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .emoji-btn.selected { border-color: var(--warm); background: rgba(217,123,79,0.10); transform: scale(1.1); }
+
+    .btn-primary {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, var(--warm), var(--warm-lt));
+      border: none; border-radius: 14px; color: white;
+      font-size: 1rem; font-family: 'Noto Sans TC', sans-serif;
+      font-weight: 500; cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s; margin-bottom: 8px;
+    }
+    .btn-primary:disabled { opacity:0.55; cursor:not-allowed; }
+    .btn-primary:not(:disabled):active { transform: scale(0.98); }
+
+    .btn-cancel {
+      width: 100%; padding: 11px; background: none; border: none;
+      color: var(--text-lt); font-size: 0.88rem;
+      font-family: 'Noto Sans TC', sans-serif; cursor: pointer;
+    }
+
+    /* ══ NAMES DIALOG ══ */
+    #names-dialog {
+      display: none; position: fixed; inset: 0;
+      background: rgba(40,28,20,0.45); z-index: 200;
+      align-items: center; justify-content: center; padding: 28px;
+      backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    }
+    #names-dialog.show { display:flex; }
+
+    .dialog-box {
+      background: var(--card); border-radius: 22px; padding: 28px 24px;
+      width: 100%; max-width: 320px; box-shadow: var(--shadow-md);
+      animation: popIn 0.25s cubic-bezier(0.32,0.72,0,1);
+    }
+    @keyframes popIn {
+      from { transform: scale(0.92); opacity:0; }
+      to   { transform: scale(1);    opacity:1; }
+    }
+    .dialog-title { font-family: 'Noto Serif TC', serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; }
+
+    .toast {
+      position: fixed; bottom: 100px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--text); color: #fff; font-size: 0.85rem;
+      padding: 10px 20px; border-radius: 20px;
+      opacity: 0; pointer-events: none; transition: all 0.3s;
+      white-space: nowrap; z-index: 999;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- PICKER -->
+<div id="picker-screen" class="screen active">
+  <div class="picker-inner">
+    <span class="picker-emoji">🍱</span>
+    <div class="picker-title">吃什麼</div>
+    <div class="picker-sub">今天誰在記錄？</div>
+    <div class="user-cards">
+      <div class="user-card" onclick="selectUser(1)">
+        <div class="user-avatar avatar-warm">🐯</div>
+        <div class="user-card-text">
+          <div class="user-card-name" id="picker-name1">使用者一</div>
+          <div class="user-card-hint">點擊選擇</div>
+        </div>
+      </div>
+      <div class="user-card" onclick="selectUser(2)">
+        <div class="user-avatar avatar-sage">🐰</div>
+        <div class="user-card-text">
+          <div class="user-card-name" id="picker-name2">使用者二</div>
+          <div class="user-card-hint">點擊選擇</div>
+        </div>
+      </div>
+    </div>
+    <button class="edit-names-btn" onclick="showNamesDialog()">✏️ 修改名字</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main-screen" class="screen">
+  <div class="header" id="header">
+    <div class="header-row">
+      <div class="header-title">吃什麼 🍱</div>
+      <div class="user-chip" onclick="switchUser()">
+        <div class="user-chip-dot avatar-warm" id="chip-avatar">🐯</div>
+        <div class="user-chip-name" id="chip-name">我</div>
+      </div>
+    </div>
+    <div class="view-toggle">
+      <button class="toggle-btn active" id="btn-mine" onclick="setView('mine')">我的紀錄</button>
+      <button class="toggle-btn"        id="btn-all"  onclick="setView('all')">我們的 💑</button>
+    </div>
+  </div>
+  <div class="feed" id="feed">
+    <div class="state-msg"><div class="state-emoji">⌛</div><div class="state-text">載入中…</div></div>
+  </div>
+</div>
+
+<button class="fab" id="fab" onclick="openModal()" aria-label="新增餐點">＋</button>
+
+<!-- ADD MODAL -->
+<div class="overlay" id="add-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">新增一餐 ✍️</div>
+
+    <label class="form-label">吃了什麼？</label>
+    <input type="text" class="form-input" id="meal-name" placeholder="例：滷肉飯、雞排便當、珍奶…" maxlength="60" />
+
+    <label class="form-label">選個表情</label>
+    <div class="emoji-row" id="emoji-row"></div>
+
+    <button class="btn-primary" id="submit-btn" onclick="submitMeal()">記錄這餐 ✓</button>
+    <button class="btn-cancel" onclick="closeModal()">取消</button>
+  </div>
+</div>
+
+<!-- NAMES DIALOG -->
+<div id="names-dialog">
+  <div class="dialog-box">
+    <div class="dialog-title">設定暱稱</div>
+    <label class="form-label">🐯 使用者一的名字</label>
+    <input type="text" class="form-input" id="n1-input" placeholder="輸入名字" maxlength="12" />
+    <label class="form-label">🐰 使用者二的名字</label>
+    <input type="text" class="form-input" id="n2-input" placeholder="輸入名字" maxlength="12" />
+    <button class="btn-primary" onclick="saveNames()">儲存 ✓</button>
+    <button class="btn-cancel" onclick="closeNamesDialog()">取消</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+// 🔧 填入你的 Firebase 設定
+// ══════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let curUser    = null;
+let curUserNum = null;
+let viewMode   = 'mine';
+let selectedEmoji = '🍽️';
+
+let uName1 = localStorage.getItem('fd_n1') || '使用者一';
+let uName2 = localStorage.getItem('fd_n2') || '使用者二';
+const AVATARS = ['🐯','🐰'];
+const FOOD_EMOJIS = ['🍽️','🍱','🍜','🍛','🍣','🍔','🥗','🍕','🥪','🍰','☕','🧋','🥤','🍺','🍗'];
+
+// 初始化 emoji 選單
+(function() {
+  const row = document.getElementById('emoji-row');
+  FOOD_EMOJIS.forEach((e, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-btn' + (i === 0 ? ' selected' : '');
+    btn.textContent = e;
+    btn.onclick = () => {
+      document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedEmoji = e;
+    };
+    row.appendChild(btn);
+  });
+})();
+
+function init() {
+  refreshPickerNames();
+  const saved = localStorage.getItem('fd_user');
+  const num   = localStorage.getItem('fd_num');
+  if (saved && num) { curUser = saved; curUserNum = parseInt(num); enterMain(); }
+}
+
+function refreshPickerNames() {
+  document.getElementById('picker-name1').textContent = uName1;
+  document.getElementById('picker-name2').textContent = uName2;
+}
+
+function selectUser(num) {
+  curUserNum = num;
+  curUser    = num === 1 ? uName1 : uName2;
+  localStorage.setItem('fd_user', curUser);
+  localStorage.setItem('fd_num',  num);
+  enterMain();
+}
+
+function switchUser() {
+  localStorage.removeItem('fd_user');
+  localStorage.removeItem('fd_num');
+  curUser = null;
+  document.getElementById('main-screen').classList.remove('active');
+  document.getElementById('picker-screen').classList.add('active');
+  document.getElementById('fab').classList.remove('visible');
+  refreshPickerNames();
+}
+
+function enterMain() {
+  document.getElementById('picker-screen').classList.remove('active');
+  document.getElementById('main-screen').classList.add('active');
+  document.getElementById('fab').classList.add('visible');
+  const chipAvatar = document.getElementById('chip-avatar');
+  chipAvatar.textContent = AVATARS[curUserNum - 1];
+  chipAvatar.className   = 'user-chip-dot ' + (curUserNum === 1 ? 'avatar-warm' : 'avatar-sage');
+  document.getElementById('chip-name').textContent = curUser;
+  document.getElementById('main-screen').addEventListener('scroll', function() {
+    document.getElementById('header').classList.toggle('scrolled', this.scrollTop > 4);
+  }, { passive: true });
+  loadMeals();
+}
+
+function setView(mode) {
+  viewMode = mode;
+  document.getElementById('btn-mine').classList.toggle('active', mode === 'mine');
+  document.getElementById('btn-all').classList.toggle('active', mode === 'all');
+  loadMeals();
+}
+
+async function loadMeals() {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = '<div class="state-msg"><div class="state-emoji">⌛</div><div class="state-text">載入中…</div></div>';
+  try {
+    let ref = db.collection('meals').orderBy('ts', 'desc').limit(100);
+    if (viewMode === 'mine') ref = db.collection('meals').where('user','==',curUser).orderBy('ts','desc').limit(60);
+    const snap = await ref.get();
+    const meals = [];
+    snap.forEach(d => meals.push({ id: d.id, ...d.data() }));
+    renderFeed(meals);
+  } catch(e) {
+    console.error(e);
+    feed.innerHTML = `<div class="state-msg"><div class="state-emoji">⚠️</div><div class="state-text">載入失敗<br><small style="font-size:0.76rem">${e.message}</small></div></div>`;
+  }
+}
+
+function renderFeed(meals) {
+  const feed = document.getElementById('feed');
+  if (!meals.length) {
+    feed.innerHTML = `<div class="state-msg"><div class="state-emoji">🍽️</div><div class="state-text">還沒有紀錄<br>按下右下角的 ＋ 開始記錄！</div></div>`;
+    return;
+  }
+  const groups = {};
+  meals.forEach(m => {
+    const d = m.date || dateStr(m.ts?.toDate() || new Date());
+    if (!groups[d]) groups[d] = [];
+    groups[d].push(m);
+  });
+  const showUser = viewMode === 'all';
+  let html = '';
+  for (const [date, list] of Object.entries(groups)) {
+    html += `<div class="date-group"><div class="date-label">${dateLabel(date)}</div>`;
+    for (const m of list) {
+      const time  = m.ts ? timeStr(m.ts.toDate()) : '';
+      const name  = esc(m.mealName || '');
+      const user  = esc(m.user || '');
+      const emoji = m.emoji || '🍽️';
+      html += `<div class="meal-card">
+        <div class="meal-icon">${emoji}</div>
+        <div class="meal-info">
+          <div class="meal-name">${name}</div>
+          <div class="meal-meta">
+            ${showUser ? `<span class="meal-user-tag">${user}</span>` : ''}
+            <span class="meal-time">${time}</span>
+          </div>
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  feed.innerHTML = html;
+}
+
+function openModal() {
+  document.getElementById('meal-name').value = '';
+  selectedEmoji = '🍽️';
+  document.querySelectorAll('.emoji-btn').forEach((b,i) => b.classList.toggle('selected', i === 0));
+  document.getElementById('add-overlay').classList.add('show');
+  setTimeout(() => document.getElementById('meal-name').focus(), 300);
+}
+
+function closeModal() { document.getElementById('add-overlay').classList.remove('show'); }
+
+async function submitMeal() {
+  const name = document.getElementById('meal-name').value.trim();
+  if (!name) { document.getElementById('meal-name').focus(); return; }
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = '儲存中…';
+  try {
+    const now = new Date();
+    await db.collection('meals').add({
+      user: curUser, mealName: name, emoji: selectedEmoji,
+      ts: firebase.firestore.Timestamp.fromDate(now), date: dateStr(now)
+    });
+    closeModal(); showToast('記錄成功 🎉'); loadMeals();
+  } catch(e) {
+    console.error(e); showToast('儲存失敗，請再試');
+  } finally {
+    btn.disabled = false; btn.textContent = '記錄這餐 ✓';
+  }
+}
+
+function showNamesDialog() {
+  document.getElementById('n1-input').value = uName1;
+  document.getElementById('n2-input').value = uName2;
+  document.getElementById('names-dialog').classList.add('show');
+}
+function closeNamesDialog() { document.getElementById('names-dialog').classList.remove('show'); }
+function saveNames() {
+  const n1 = document.getElementById('n1-input').value.trim() || '使用者一';
+  const n2 = document.getElementById('n2-input').value.trim() || '使用者二';
+  uName1 = n1; uName2 = n2;
+  localStorage.setItem('fd_n1', n1); localStorage.setItem('fd_n2', n2);
+  closeNamesDialog(); refreshPickerNames(); showToast('名字已更新');
+}
+
+function dateStr(d)  { return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
+function timeStr(d)  { return `${p(d.getHours())}:${p(d.getMinutes())}`; }
+function p(n)        { return String(n).padStart(2,'0'); }
+function esc(s)      { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function dateLabel(ds) {
+  const today     = dateStr(new Date());
+  const yesterday = dateStr(new Date(Date.now()-86400000));
+  if (ds === today)     return '今天';
+  if (ds === yesterday) return '昨天';
+  const d = new Date(ds + 'T00:00:00');
+  return `${d.getMonth()+1} 月 ${d.getDate()} 日`;
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+document.getElementById('add-overlay').addEventListener('click', e => { if (e.target === document.getElementById('add-overlay')) closeModal(); });
+document.getElementById('names-dialog').addEventListener('click', e => { if (e.target === document.getElementById('names-dialog')) closeNamesDialog(); });
+
+init();
+</script>
+</body>
+</html>
