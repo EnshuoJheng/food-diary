@@ -145,9 +145,54 @@
     .tag-點心 { background:rgba(200,160,200,.15); color:#7A4A8A; border:1px solid rgba(180,120,180,.25); }
     .tag-user { background:var(--cream-dark); color:var(--text-md); border:1px solid var(--border); }
 
+    .delete-btn {
+      background: none; border: none; font-size: 1rem; cursor: pointer;
+      padding: 6px; border-radius: 8px; color: var(--text-lt);
+      opacity: 0.5; transition: opacity .2s, background .2s;
+      flex-shrink: 0; -webkit-tap-highlight-color: transparent;
+      line-height: 1;
+    }
+    .delete-btn:active { opacity: 1; background: rgba(200,80,80,.10); }
+
+    /* delete confirm dialog */
+    #delete-dialog {
+      display:none; position:fixed; inset:0;
+      background:rgba(40,28,20,.45); z-index:300;
+      align-items:center; justify-content:center; padding:28px;
+      backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
+    }
+    #delete-dialog.show { display:flex; }
+    .delete-box {
+      background:var(--card); border-radius:22px; padding:28px 24px;
+      width:100%; max-width:300px; box-shadow:var(--shadow-md); text-align:center;
+      animation:popIn .25s cubic-bezier(.32,.72,0,1);
+    }
+    .delete-box-emoji { font-size:2.2rem; margin-bottom:12px; }
+    .delete-box-title { font-family:'Noto Serif TC',serif; font-size:1.1rem; font-weight:700; margin-bottom:6px; }
+    .delete-box-sub   { font-size:.84rem; color:var(--text-lt); margin-bottom:24px; }
+    .btn-danger {
+      width:100%; padding:13px; background:#E05050;
+      border:none; border-radius:14px; color:white;
+      font-size:.95rem; font-family:'Noto Sans TC',sans-serif;
+      font-weight:500; cursor:pointer; margin-bottom:8px;
+      transition:opacity .2s;
+    }
+    .btn-danger:active { opacity:.8; }
+
     .state-msg { text-align:center; padding:64px 20px; color:var(--text-lt); }
     .state-emoji { font-size:2.8rem; margin-bottom:14px; }
     .state-text  { font-size:.9rem; line-height:1.6; }
+
+    /* 刪除按鈕 */
+    .meal-card { position:relative; }
+    .meal-delete {
+      flex-shrink:0; width:34px; height:34px; border-radius:50%;
+      background:none; border:none; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.1rem; color:#ccc;
+      transition:color .2s; -webkit-tap-highlight-color:transparent;
+    }
+    .meal-delete:active { color:#e57373; }
 
     /* FAB */
     .fab {
@@ -364,6 +409,17 @@
   </div>
 </div>
 
+<!-- DELETE CONFIRM -->
+<div id="delete-dialog">
+  <div class="delete-box">
+    <div class="delete-box-emoji">🗑️</div>
+    <div class="delete-box-title">刪除這筆紀錄？</div>
+    <div class="delete-box-sub">刪除後無法復原</div>
+    <button class="btn-danger" id="confirm-delete-btn" onclick="doDelete()">確認刪除</button>
+    <button class="btn-cancel" onclick="cancelDelete()">取消</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -556,6 +612,7 @@ function renderFeed(meals) {
             <span class="meal-time">${time}</span>
           </div>
         </div>
+        <button class="meal-delete" onclick="deleteMeal('${m.id}')" title="刪除">🗑️</button>
       </div>`;
     }
     html += `</div>`;
@@ -594,7 +651,7 @@ function openModal() {
   document.getElementById('btn-yesterday').classList.remove('selected');
   document.getElementById('date-picker').value = '';
   document.getElementById('add-overlay').classList.add('show');
-  setTimeout(() => document.getElementById('meal-name').focus(), 300);
+  // iOS: don't auto-focus, let user tap naturally
 }
 
 function closeModal() { document.getElementById('add-overlay').classList.remove('show'); }
@@ -620,6 +677,17 @@ async function submitMeal() {
     console.error(e); showToast('儲存失敗，請再試');
   } finally {
     btn.disabled = false; btn.textContent = '記錄這餐 ✓';
+  }
+}
+
+// ══ DELETE ══
+async function deleteMeal(id) {
+  if (!confirm('刪除這筆紀錄？')) return;
+  try {
+    await db.collection('meals').doc(id).delete();
+    showToast('已刪除');
+  } catch(e) {
+    console.error(e); showToast('刪除失敗');
   }
 }
 
@@ -666,6 +734,35 @@ function showToast(msg) {
 
 document.getElementById('add-overlay').addEventListener('click', e => { if (e.target === document.getElementById('add-overlay')) closeModal(); });
 document.getElementById('names-dialog').addEventListener('click', e => { if (e.target === document.getElementById('names-dialog')) closeNamesDialog(); });
+document.getElementById('delete-dialog').addEventListener('click', e => { if (e.target === document.getElementById('delete-dialog')) cancelDelete(); });
+
+// ══ DELETE ══
+let pendingDeleteId = null;
+
+function confirmDelete(id, e) {
+  e.stopPropagation();
+  pendingDeleteId = id;
+  document.getElementById('delete-dialog').classList.add('show');
+}
+
+function cancelDelete() {
+  pendingDeleteId = null;
+  document.getElementById('delete-dialog').classList.remove('show');
+}
+
+async function doDelete() {
+  if (!pendingDeleteId) return;
+  const btn = document.getElementById('confirm-delete-btn');
+  btn.textContent = '刪除中…'; btn.disabled = true;
+  try {
+    await db.collection('meals').doc(pendingDeleteId).delete();
+    cancelDelete();
+    showToast('已刪除');
+  } catch(e) {
+    console.error(e); showToast('刪除失敗，請再試');
+    btn.textContent = '確認刪除'; btn.disabled = false;
+  }
+}
 
 init();
 </script>
