@@ -7,8 +7,6 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>吃什麼 🍱</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
-
-  <!-- Firebase SDK (不需要 Storage 了) -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
@@ -19,7 +17,6 @@
       --warm:       #D97B4F;
       --warm-lt:    #EDAA80;
       --sage:       #7A9E7E;
-      --sage-lt:    #B5CDB4;
       --text:       #3A2E24;
       --text-md:    #6B5A4E;
       --text-lt:    #9E897C;
@@ -28,261 +25,247 @@
       --shadow-sm:  0 1px 6px rgba(58,46,36,0.07);
       --shadow-md:  0 4px 18px rgba(58,46,36,0.10);
     }
-
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-
     body {
-      background: var(--cream);
-      color: var(--text);
-      font-family: 'Noto Sans TC', sans-serif;
-      font-weight: 300;
-      min-height: 100vh;
-      min-height: 100dvh;
-      overflow-x: hidden;
+      background: var(--cream); color: var(--text);
+      font-family: 'Noto Sans TC', sans-serif; font-weight: 300;
+      min-height: 100vh; min-height: 100dvh; overflow-x: hidden;
     }
-
     .screen { display:none; }
     .screen.active { display:flex; flex-direction:column; min-height:100vh; min-height:100dvh; }
 
     /* ══ PICKER ══ */
     #picker-screen {
-      align-items: center; justify-content: center;
-      padding: 40px 28px; position: relative; overflow: hidden;
-    }
-    #picker-screen::before, #picker-screen::after {
-      content: ''; position: absolute; border-radius: 50%; z-index: 0;
+      align-items:center; justify-content:center;
+      padding:40px 28px; position:relative; overflow:hidden;
     }
     #picker-screen::before {
-      width: 300px; height: 300px;
-      background: radial-gradient(circle, rgba(217,123,79,0.12), transparent 70%);
-      top: -80px; right: -80px;
+      content:''; position:absolute; border-radius:50%; z-index:0;
+      width:300px; height:300px;
+      background:radial-gradient(circle,rgba(217,123,79,.12),transparent 70%);
+      top:-80px; right:-80px;
     }
     #picker-screen::after {
-      width: 260px; height: 260px;
-      background: radial-gradient(circle, rgba(122,158,126,0.10), transparent 70%);
-      bottom: -60px; left: -60px;
+      content:''; position:absolute; border-radius:50%; z-index:0;
+      width:260px; height:260px;
+      background:radial-gradient(circle,rgba(122,158,126,.10),transparent 70%);
+      bottom:-60px; left:-60px;
     }
-
     .picker-inner { position:relative; z-index:1; text-align:center; width:100%; max-width:320px; }
-
-    .picker-emoji {
-      font-size: 3.2rem; margin-bottom: 12px; display: block;
-      animation: float 3s ease-in-out infinite;
-    }
-    @keyframes float {
-      0%,100% { transform: translateY(0); }
-      50%      { transform: translateY(-8px); }
-    }
-
-    .picker-title { font-family: 'Noto Serif TC', serif; font-size: 2rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-    .picker-sub   { color: var(--text-lt); font-size: 0.88rem; margin-bottom: 44px; }
-
-    .user-cards { display:flex; flex-direction:column; gap:14px; }
-
+    .picker-emoji { font-size:3.2rem; margin-bottom:12px; display:block; animation:float 3s ease-in-out infinite; }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    .picker-title { font-family:'Noto Serif TC',serif; font-size:2rem; font-weight:700; margin-bottom:6px; }
+    .picker-sub   { color:var(--text-lt); font-size:.88rem; margin-bottom:44px; }
+    .user-cards   { display:flex; flex-direction:column; gap:14px; }
     .user-card {
-      background: var(--card); border: 1.5px solid var(--border);
-      border-radius: 18px; padding: 18px 20px; cursor: pointer;
-      display: flex; align-items: center; gap: 14px;
-      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-      box-shadow: var(--shadow-sm); -webkit-tap-highlight-color: transparent;
+      background:var(--card); border:1.5px solid var(--border);
+      border-radius:18px; padding:18px 20px; cursor:pointer;
+      display:flex; align-items:center; gap:14px;
+      transition:transform .2s,box-shadow .2s,border-color .2s;
+      box-shadow:var(--shadow-sm); -webkit-tap-highlight-color:transparent;
     }
-    .user-card:active { transform: scale(0.97); border-color: var(--warm); box-shadow: var(--shadow-md); }
-
+    .user-card:active { transform:scale(.97); border-color:var(--warm); box-shadow:var(--shadow-md); }
     .user-avatar {
-      width: 52px; height: 52px; border-radius: 50%;
-      display: flex; align-items:center; justify-content:center;
-      font-size: 1.5rem; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+      width:52px; height:52px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.5rem; flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,.10);
     }
-    .avatar-warm { background: linear-gradient(135deg, #F0A97A, #D97B4F); }
-    .avatar-sage  { background: linear-gradient(135deg, #B5CDB4, #7A9E7E); }
-
-    .user-card-text { text-align:left; }
-    .user-card-name { font-size: 1.1rem; font-weight: 500; color: var(--text); }
-    .user-card-hint { font-size: 0.78rem; color: var(--text-lt); margin-top: 2px; }
-
+    .avatar-warm { background:linear-gradient(135deg,#F0A97A,#D97B4F); }
+    .avatar-sage { background:linear-gradient(135deg,#B5CDB4,#7A9E7E); }
+    .user-card-name { font-size:1.1rem; font-weight:500; }
+    .user-card-hint { font-size:.78rem; color:var(--text-lt); margin-top:2px; }
     .edit-names-btn {
-      margin-top: 28px; background: none; border: none;
-      color: var(--text-lt); font-size: 0.82rem;
-      font-family: 'Noto Sans TC', sans-serif;
-      cursor: pointer; padding: 6px 10px; border-radius: 8px; transition: color 0.2s;
+      margin-top:28px; background:none; border:none; color:var(--text-lt);
+      font-size:.82rem; font-family:'Noto Sans TC',sans-serif;
+      cursor:pointer; padding:6px 10px; border-radius:8px; transition:color .2s;
     }
-    .edit-names-btn:hover { color: var(--text-md); }
+    .edit-names-btn:hover { color:var(--text-md); }
 
     /* ══ MAIN ══ */
-    #main-screen { padding-bottom: 90px; }
-
+    #main-screen { padding-bottom:90px; }
     .header {
-      position: sticky; top: 0; z-index: 20;
-      background: var(--cream); padding: 16px 20px 0;
-      border-bottom: 1px solid transparent; transition: border-color 0.2s;
+      position:sticky; top:0; z-index:20; background:var(--cream);
+      padding:16px 20px 0; border-bottom:1px solid transparent; transition:border-color .2s;
     }
-    .header.scrolled { border-bottom-color: var(--border); }
-
-    .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-    .header-title { font-family: 'Noto Serif TC', serif; font-size: 1.5rem; font-weight: 700; }
-
+    .header.scrolled { border-bottom-color:var(--border); }
+    .header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .header-title { font-family:'Noto Serif TC',serif; font-size:1.5rem; font-weight:700; }
     .user-chip {
-      display: flex; align-items: center; gap: 7px;
-      background: var(--card); border: 1.5px solid var(--border);
-      border-radius: 20px; padding: 5px 12px 5px 6px;
-      cursor: pointer; transition: border-color 0.2s; -webkit-tap-highlight-color: transparent;
+      display:flex; align-items:center; gap:7px;
+      background:var(--card); border:1.5px solid var(--border);
+      border-radius:20px; padding:5px 12px 5px 6px;
+      cursor:pointer; transition:border-color .2s; -webkit-tap-highlight-color:transparent;
     }
-    .user-chip:active { border-color: var(--warm); }
-    .user-chip-dot { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items:center; justify-content:center; font-size: 0.9rem; }
-    .user-chip-name { font-size: 0.85rem; font-weight: 500; color: var(--text); }
-
+    .user-chip:active { border-color:var(--warm); }
+    .user-chip-dot { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.9rem; }
+    .user-chip-name { font-size:.85rem; font-weight:500; }
     .view-toggle {
-      display: flex; background: var(--card); border: 1.5px solid var(--border);
-      border-radius: 12px; padding: 4px; margin-bottom: 16px; gap: 4px;
+      display:flex; background:var(--card); border:1.5px solid var(--border);
+      border-radius:12px; padding:4px; margin-bottom:16px; gap:4px;
     }
     .toggle-btn {
-      flex: 1; padding: 8px 6px; border: none; background: transparent;
-      border-radius: 8px; font-size: 0.84rem; font-family: 'Noto Sans TC', sans-serif;
-      font-weight: 400; color: var(--text-lt); cursor: pointer; transition: all 0.2s;
-      -webkit-tap-highlight-color: transparent;
+      flex:1; padding:8px 6px; border:none; background:transparent;
+      border-radius:8px; font-size:.84rem; font-family:'Noto Sans TC',sans-serif;
+      color:var(--text-lt); cursor:pointer; transition:all .2s; -webkit-tap-highlight-color:transparent;
     }
-    .toggle-btn.active { background: var(--warm); color: #fff; font-weight: 500; box-shadow: 0 2px 8px rgba(217,123,79,0.30); }
+    .toggle-btn.active { background:var(--warm); color:#fff; font-weight:500; box-shadow:0 2px 8px rgba(217,123,79,.30); }
 
     /* Feed */
-    .feed { padding: 4px 20px 0; }
-    .date-group { margin-bottom: 28px; }
-
+    .feed { padding:4px 20px 0; }
+    .date-group { margin-bottom:28px; }
     .date-label {
-      font-size: 0.76rem; color: var(--text-lt);
-      letter-spacing: 0.08em; margin-bottom: 10px; padding-left: 2px;
-      display: flex; align-items: center; gap: 8px;
+      font-size:.76rem; color:var(--text-lt); letter-spacing:.08em;
+      margin-bottom:10px; padding-left:2px;
+      display:flex; align-items:center; gap:8px;
     }
-    .date-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .date-label::after { content:''; flex:1; height:1px; background:var(--border); }
 
     .meal-card {
-      background: var(--card); border-radius: 16px;
-      margin-bottom: 10px; box-shadow: var(--shadow-sm);
-      border: 1px solid var(--border);
-      display: flex; align-items: center; padding: 14px 16px; gap: 12px;
+      background:var(--card); border-radius:16px; margin-bottom:10px;
+      box-shadow:var(--shadow-sm); border:1px solid var(--border);
+      display:flex; align-items:center; padding:14px 16px; gap:12px;
     }
-
     .meal-icon {
-      font-size: 1.6rem; flex-shrink: 0; width: 46px; height: 46px;
-      background: var(--cream-dark); border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
+      font-size:1.6rem; flex-shrink:0; width:46px; height:46px;
+      background:var(--cream-dark); border-radius:12px;
+      display:flex; align-items:center; justify-content:center;
     }
+    .meal-info { flex:1; min-width:0; }
+    .meal-name { font-size:1rem; font-weight:500; }
+    .meal-meta { display:flex; align-items:center; gap:6px; margin-top:4px; flex-wrap:wrap; }
+    .meal-time { font-size:.75rem; color:var(--text-lt); }
 
-    .meal-info { flex: 1; min-width: 0; }
-    .meal-name { font-size: 1rem; font-weight: 500; color: var(--text); }
-    .meal-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; flex-wrap: wrap; }
-    .meal-time { font-size: 0.76rem; color: var(--text-lt); }
-    .meal-user-tag {
-      font-size: 0.72rem; background: var(--cream-dark);
-      border: 1px solid var(--border); border-radius: 8px;
-      padding: 2px 8px; color: var(--text-md); white-space: nowrap;
+    .meal-tag {
+      font-size:.72rem; border-radius:8px; padding:2px 8px;
+      white-space:nowrap; font-weight:500;
     }
+    .tag-早餐 { background:rgba(237,170,128,.20); color:#C0693A; border:1px solid rgba(217,123,79,.25); }
+    .tag-午餐 { background:rgba(122,158,126,.15); color:#4E7A52; border:1px solid rgba(122,158,126,.30); }
+    .tag-晚餐 { background:rgba(100,120,180,.12); color:#4A5A9A; border:1px solid rgba(100,120,180,.25); }
+    .tag-點心 { background:rgba(200,160,200,.15); color:#7A4A8A; border:1px solid rgba(180,120,180,.25); }
+    .tag-user { background:var(--cream-dark); color:var(--text-md); border:1px solid var(--border); }
 
-    .state-msg { text-align: center; padding: 64px 20px; color: var(--text-lt); }
-    .state-emoji { font-size: 2.8rem; margin-bottom: 14px; }
-    .state-text  { font-size: 0.9rem; line-height: 1.6; }
+    .state-msg { text-align:center; padding:64px 20px; color:var(--text-lt); }
+    .state-emoji { font-size:2.8rem; margin-bottom:14px; }
+    .state-text  { font-size:.9rem; line-height:1.6; }
 
     /* FAB */
     .fab {
-      position: fixed; bottom: 28px; right: 24px;
-      width: 62px; height: 62px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--warm), var(--warm-lt));
-      border: none; cursor: pointer; display: none;
-      align-items: center; justify-content: center;
-      font-size: 1.8rem; line-height: 1;
-      box-shadow: 0 6px 20px rgba(217,123,79,0.45);
-      z-index: 30; transition: transform 0.15s, box-shadow 0.15s;
-      -webkit-tap-highlight-color: transparent; color: white;
+      position:fixed; bottom:28px; right:24px;
+      width:62px; height:62px; border-radius:50%;
+      background:linear-gradient(135deg,var(--warm),var(--warm-lt));
+      border:none; cursor:pointer; display:none;
+      align-items:center; justify-content:center;
+      font-size:1.8rem; color:white;
+      box-shadow:0 6px 20px rgba(217,123,79,.45);
+      z-index:30; transition:transform .15s,box-shadow .15s;
+      -webkit-tap-highlight-color:transparent;
     }
     .fab.visible { display:flex; }
-    .fab:active { transform: scale(0.92); box-shadow: 0 3px 10px rgba(217,123,79,0.35); }
+    .fab:active { transform:scale(.92); box-shadow:0 3px 10px rgba(217,123,79,.35); }
 
     /* ══ MODAL ══ */
     .overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(40,28,20,0.45); z-index: 100;
-      backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+      display:none; position:fixed; inset:0;
+      background:rgba(40,28,20,.45); z-index:100;
+      backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
     }
     .overlay.show { display:flex; align-items:flex-end; justify-content:center; }
-
     .sheet {
-      width: 100%; max-width: 480px; background: var(--card);
-      border-radius: 24px 24px 0 0; padding: 20px 24px 48px;
-      animation: slideUp 0.3s cubic-bezier(0.32,0.72,0,1);
+      width:100%; max-width:480px; background:var(--card);
+      border-radius:24px 24px 0 0; padding:20px 24px 48px;
+      animation:slideUp .3s cubic-bezier(.32,.72,0,1);
+      max-height:92dvh; overflow-y:auto;
     }
-    @keyframes slideUp {
-      from { transform: translateY(100%); opacity:0; }
-      to   { transform: translateY(0);    opacity:1; }
-    }
+    @keyframes slideUp { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
+    .sheet-handle { width:38px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 20px; }
+    .sheet-title  { font-family:'Noto Serif TC',serif; font-size:1.35rem; font-weight:700; margin-bottom:22px; }
 
-    .sheet-handle { width: 38px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
-    .sheet-title { font-family: 'Noto Serif TC', serif; font-size: 1.35rem; font-weight: 700; margin-bottom: 22px; }
-
-    .form-label { display: block; font-size: 0.80rem; color: var(--text-md); margin-bottom: 7px; letter-spacing: 0.04em; }
-
+    .form-label { display:block; font-size:.80rem; color:var(--text-md); margin-bottom:7px; letter-spacing:.04em; }
     .form-input {
-      width: 100%; padding: 14px 16px; border: 1.5px solid var(--border);
-      border-radius: 13px; font-size: 1rem; font-family: 'Noto Sans TC', sans-serif;
-      background: var(--cream); color: var(--text);
-      outline: none; transition: border-color 0.2s; margin-bottom: 20px;
+      width:100%; padding:13px 16px; border:1.5px solid var(--border);
+      border-radius:13px; font-size:1rem; font-family:'Noto Sans TC',sans-serif;
+      background:var(--cream); color:var(--text);
+      outline:none; transition:border-color .2s; margin-bottom:20px;
     }
-    .form-input:focus { border-color: var(--warm); }
+    .form-input:focus { border-color:var(--warm); }
+    input[type="date"].form-input { margin-bottom:0; padding:11px 14px; }
 
-    .emoji-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
-    .emoji-btn {
-      width: 46px; height: 46px; border-radius: 12px;
-      background: var(--cream); border: 1.5px solid var(--border);
-      font-size: 1.4rem; cursor: pointer; transition: all 0.15s;
-      display: flex; align-items:center; justify-content:center;
-      -webkit-tap-highlight-color: transparent;
+    /* 餐別 */
+    .meal-type-row { display:flex; gap:8px; margin-bottom:20px; }
+    .meal-type-btn {
+      flex:1; padding:10px 4px; border-radius:12px;
+      background:var(--cream); border:1.5px solid var(--border);
+      font-size:.82rem; font-family:'Noto Sans TC',sans-serif;
+      cursor:pointer; transition:all .15s; text-align:center;
+      color:var(--text-md); -webkit-tap-highlight-color:transparent; line-height:1.4;
     }
-    .emoji-btn.selected { border-color: var(--warm); background: rgba(217,123,79,0.10); transform: scale(1.1); }
+    .meal-type-btn.selected { border-color:var(--warm); background:rgba(217,123,79,.10); color:var(--warm); font-weight:500; }
+
+    /* 日期 */
+    .date-row { display:flex; gap:8px; align-items:center; margin-bottom:24px; }
+    .date-shortcut {
+      padding:9px 12px; border-radius:12px;
+      background:var(--cream); border:1.5px solid var(--border);
+      font-size:.80rem; font-family:'Noto Sans TC',sans-serif;
+      cursor:pointer; transition:all .15s; white-space:nowrap;
+      color:var(--text-md); -webkit-tap-highlight-color:transparent;
+    }
+    .date-shortcut.selected { border-color:var(--sage); background:rgba(122,158,126,.10); color:var(--sage); font-weight:500; }
+
+    /* emoji */
+    .emoji-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+    .emoji-btn {
+      width:44px; height:44px; border-radius:11px;
+      background:var(--cream); border:1.5px solid var(--border);
+      font-size:1.3rem; cursor:pointer; transition:all .15s;
+      display:flex; align-items:center; justify-content:center;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .emoji-btn.selected { border-color:var(--warm); background:rgba(217,123,79,.10); transform:scale(1.1); }
 
     .btn-primary {
-      width: 100%; padding: 14px;
-      background: linear-gradient(135deg, var(--warm), var(--warm-lt));
-      border: none; border-radius: 14px; color: white;
-      font-size: 1rem; font-family: 'Noto Sans TC', sans-serif;
-      font-weight: 500; cursor: pointer;
-      transition: opacity 0.2s, transform 0.15s; margin-bottom: 8px;
+      width:100%; padding:14px;
+      background:linear-gradient(135deg,var(--warm),var(--warm-lt));
+      border:none; border-radius:14px; color:white;
+      font-size:1rem; font-family:'Noto Sans TC',sans-serif;
+      font-weight:500; cursor:pointer;
+      transition:opacity .2s,transform .15s; margin-bottom:8px;
     }
-    .btn-primary:disabled { opacity:0.55; cursor:not-allowed; }
-    .btn-primary:not(:disabled):active { transform: scale(0.98); }
-
+    .btn-primary:disabled { opacity:.55; cursor:not-allowed; }
+    .btn-primary:not(:disabled):active { transform:scale(.98); }
     .btn-cancel {
-      width: 100%; padding: 11px; background: none; border: none;
-      color: var(--text-lt); font-size: 0.88rem;
-      font-family: 'Noto Sans TC', sans-serif; cursor: pointer;
+      width:100%; padding:11px; background:none; border:none;
+      color:var(--text-lt); font-size:.88rem;
+      font-family:'Noto Sans TC',sans-serif; cursor:pointer;
     }
 
     /* ══ NAMES DIALOG ══ */
     #names-dialog {
-      display: none; position: fixed; inset: 0;
-      background: rgba(40,28,20,0.45); z-index: 200;
-      align-items: center; justify-content: center; padding: 28px;
-      backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+      display:none; position:fixed; inset:0;
+      background:rgba(40,28,20,.45); z-index:200;
+      align-items:center; justify-content:center; padding:28px;
+      backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
     }
     #names-dialog.show { display:flex; }
-
     .dialog-box {
-      background: var(--card); border-radius: 22px; padding: 28px 24px;
-      width: 100%; max-width: 320px; box-shadow: var(--shadow-md);
-      animation: popIn 0.25s cubic-bezier(0.32,0.72,0,1);
+      background:var(--card); border-radius:22px; padding:28px 24px;
+      width:100%; max-width:320px; box-shadow:var(--shadow-md);
+      animation:popIn .25s cubic-bezier(.32,.72,0,1);
     }
-    @keyframes popIn {
-      from { transform: scale(0.92); opacity:0; }
-      to   { transform: scale(1);    opacity:1; }
-    }
-    .dialog-title { font-family: 'Noto Serif TC', serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; }
+    @keyframes popIn { from{transform:scale(.92);opacity:0} to{transform:scale(1);opacity:1} }
+    .dialog-title { font-family:'Noto Serif TC',serif; font-size:1.2rem; font-weight:700; margin-bottom:6px; }
+    .dialog-sub { font-size:.78rem; color:var(--text-lt); margin-bottom:20px; }
 
     .toast {
-      position: fixed; bottom: 100px; left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      background: var(--text); color: #fff; font-size: 0.85rem;
-      padding: 10px 20px; border-radius: 20px;
-      opacity: 0; pointer-events: none; transition: all 0.3s;
-      white-space: nowrap; z-index: 999;
+      position:fixed; bottom:100px; left:50%;
+      transform:translateX(-50%) translateY(20px);
+      background:var(--text); color:#fff; font-size:.85rem;
+      padding:10px 20px; border-radius:20px;
+      opacity:0; pointer-events:none; transition:all .3s;
+      white-space:nowrap; z-index:999;
     }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
   </style>
 </head>
 <body>
@@ -296,15 +279,15 @@
     <div class="user-cards">
       <div class="user-card" onclick="selectUser(1)">
         <div class="user-avatar avatar-warm">🐯</div>
-        <div class="user-card-text">
-          <div class="user-card-name" id="picker-name1">使用者一</div>
+        <div>
+          <div class="user-card-name" id="picker-name1">載入中…</div>
           <div class="user-card-hint">點擊選擇</div>
         </div>
       </div>
       <div class="user-card" onclick="selectUser(2)">
         <div class="user-avatar avatar-sage">🐰</div>
-        <div class="user-card-text">
-          <div class="user-card-name" id="picker-name2">使用者二</div>
+        <div>
+          <div class="user-card-name" id="picker-name2">載入中…</div>
           <div class="user-card-hint">點擊選擇</div>
         </div>
       </div>
@@ -333,7 +316,7 @@
   </div>
 </div>
 
-<button class="fab" id="fab" onclick="openModal()" aria-label="新增餐點">＋</button>
+<button class="fab" id="fab" onclick="openModal()">＋</button>
 
 <!-- ADD MODAL -->
 <div class="overlay" id="add-overlay">
@@ -341,8 +324,23 @@
     <div class="sheet-handle"></div>
     <div class="sheet-title">新增一餐 ✍️</div>
 
+    <label class="form-label">是哪一餐？</label>
+    <div class="meal-type-row">
+      <button class="meal-type-btn" data-type="早餐" onclick="selectMealType(this)">🌅<br>早餐</button>
+      <button class="meal-type-btn selected" data-type="午餐" onclick="selectMealType(this)">☀️<br>午餐</button>
+      <button class="meal-type-btn" data-type="晚餐" onclick="selectMealType(this)">🌙<br>晚餐</button>
+      <button class="meal-type-btn" data-type="點心" onclick="selectMealType(this)">🍰<br>點心</button>
+    </div>
+
     <label class="form-label">吃了什麼？</label>
     <input type="text" class="form-input" id="meal-name" placeholder="例：滷肉飯、雞排便當、珍奶…" maxlength="60" />
+
+    <label class="form-label">哪一天？</label>
+    <div class="date-row">
+      <button class="date-shortcut selected" id="btn-today" onclick="selectDate('today')">今天</button>
+      <button class="date-shortcut" id="btn-yesterday" onclick="selectDate('yesterday')">昨天</button>
+      <input type="date" class="form-input" id="date-picker" onchange="selectDate('custom')" />
+    </div>
 
     <label class="form-label">選個表情</label>
     <div class="emoji-row" id="emoji-row"></div>
@@ -356,6 +354,7 @@
 <div id="names-dialog">
   <div class="dialog-box">
     <div class="dialog-title">設定暱稱</div>
+    <div class="dialog-sub">名字會同步到兩台裝置</div>
     <label class="form-label">🐯 使用者一的名字</label>
     <input type="text" class="form-input" id="n1-input" placeholder="輸入名字" maxlength="12" />
     <label class="form-label">🐰 使用者二的名字</label>
@@ -368,9 +367,6 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ══════════════════════════════════════
-// 🔧 填入你的 Firebase 設定
-// ══════════════════════════════════════
 const firebaseConfig = {
   apiKey:            "AIzaSyDBrnKdmpEMpqCGvgkD8VRmKif4mxI8MZI",
   authDomain:        "food-diary-593e9.firebaseapp.com",
@@ -379,21 +375,26 @@ const firebaseConfig = {
   messagingSenderId: "8522243514190",
   appId:             "1:8522243514190:web:3ba287b0870823db77941f"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// ── State ──
 let curUser    = null;
 let curUserNum = null;
 let viewMode   = 'mine';
-let selectedEmoji = '🍽️';
+let selectedEmoji    = '🍽️';
+let selectedMealType = '午餐';
+let selectedDateMode = 'today'; // 'today' | 'yesterday' | 'custom'
+let unsubscribe = null;
 
-let uName1 = localStorage.getItem('fd_n1') || '使用者一';
-let uName2 = localStorage.getItem('fd_n2') || '使用者二';
-const AVATARS = ['🐯','🐰'];
-const FOOD_EMOJIS = ['🍽️','🍱','🍜','🍛','🍣','🍔','🥗','🍕','🥪','🍰','☕','🧋','🥤','🍺','🍗'];
+// 名字從 Firestore 取得，確保兩台裝置同步
+let uName1 = '使用者一';
+let uName2 = '使用者二';
+const AVATARS      = ['🐯','🐰'];
+const FOOD_EMOJIS  = ['🍽️','🍱','🍜','🍛','🍣','🍔','🥗','🍕','🥪','🍰','☕','🧋','🥤','🍺','🍗'];
+const MEAL_TYPES   = ['早餐','午餐','晚餐','點心'];
 
-// 初始化 emoji 選單
+// ── Emoji row ──
 (function() {
   const row = document.getElementById('emoji-row');
   FOOD_EMOJIS.forEach((e, i) => {
@@ -409,11 +410,30 @@ const FOOD_EMOJIS = ['🍽️','🍱','🍜','🍛','🍣','🍔','🥗','🍕',
   });
 })();
 
-function init() {
+// ══ NAMES (Firestore synced) ══
+async function loadNames() {
+  try {
+    const doc = await db.collection('config').doc('names').get();
+    if (doc.exists) {
+      uName1 = doc.data().name1 || '使用者一';
+      uName2 = doc.data().name2 || '使用者二';
+    }
+  } catch(e) { console.warn('loadNames failed', e); }
   refreshPickerNames();
-  const saved = localStorage.getItem('fd_user');
-  const num   = localStorage.getItem('fd_num');
-  if (saved && num) { curUser = saved; curUserNum = parseInt(num); enterMain(); }
+}
+
+// 監聽名字變動（即時同步）
+function watchNames() {
+  db.collection('config').doc('names').onSnapshot(doc => {
+    if (doc.exists) {
+      uName1 = doc.data().name1 || '使用者一';
+      uName2 = doc.data().name2 || '使用者二';
+      refreshPickerNames();
+      // 如果當前使用者是 user1 或 user2，也更新 chip
+      if (curUserNum === 1) { curUser = uName1; updateChip(); }
+      if (curUserNum === 2) { curUser = uName2; updateChip(); }
+    }
+  });
 }
 
 function refreshPickerNames() {
@@ -421,17 +441,33 @@ function refreshPickerNames() {
   document.getElementById('picker-name2').textContent = uName2;
 }
 
+function updateChip() {
+  document.getElementById('chip-name').textContent = curUser;
+}
+
+// ══ INIT ══
+async function init() {
+  await loadNames();
+  watchNames();
+  const num = localStorage.getItem('fd_num');
+  if (num) {
+    curUserNum = parseInt(num);
+    curUser    = curUserNum === 1 ? uName1 : uName2;
+    enterMain();
+  }
+}
+
+// ══ USER ══
 function selectUser(num) {
   curUserNum = num;
   curUser    = num === 1 ? uName1 : uName2;
-  localStorage.setItem('fd_user', curUser);
-  localStorage.setItem('fd_num',  num);
+  localStorage.setItem('fd_num', num);
   enterMain();
 }
 
 function switchUser() {
-  localStorage.removeItem('fd_user');
   localStorage.removeItem('fd_num');
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
   curUser = null;
   document.getElementById('main-screen').classList.remove('active');
   document.getElementById('picker-screen').classList.add('active');
@@ -439,6 +475,7 @@ function switchUser() {
   refreshPickerNames();
 }
 
+// ══ MAIN ══
 function enterMain() {
   document.getElementById('picker-screen').classList.remove('active');
   document.getElementById('main-screen').classList.add('active');
@@ -446,7 +483,7 @@ function enterMain() {
   const chipAvatar = document.getElementById('chip-avatar');
   chipAvatar.textContent = AVATARS[curUserNum - 1];
   chipAvatar.className   = 'user-chip-dot ' + (curUserNum === 1 ? 'avatar-warm' : 'avatar-sage');
-  document.getElementById('chip-name').textContent = curUser;
+  updateChip();
   document.getElementById('main-screen').addEventListener('scroll', function() {
     document.getElementById('header').classList.toggle('scrolled', this.scrollTop > 4);
   }, { passive: true });
@@ -460,16 +497,13 @@ function setView(mode) {
   loadMeals();
 }
 
-let unsubscribe = null; // 用來取消監聽
-
+// ══ LOAD (real-time) ══
 function loadMeals() {
   const feed = document.getElementById('feed');
   feed.innerHTML = '<div class="state-msg"><div class="state-emoji">⌛</div><div class="state-text">載入中…</div></div>';
-
-  // 取消上一次的監聽
   if (unsubscribe) { unsubscribe(); unsubscribe = null; }
 
-  let ref = db.collection('meals').orderBy('ts', 'desc').limit(100);
+  let ref = db.collection('meals').orderBy('ts','desc').limit(100);
   if (viewMode === 'mine') ref = db.collection('meals').where('user','==',curUser).orderBy('ts','desc').limit(60);
 
   unsubscribe = ref.onSnapshot(snap => {
@@ -478,7 +512,7 @@ function loadMeals() {
     renderFeed(meals);
   }, e => {
     console.error(e);
-    feed.innerHTML = `<div class="state-msg"><div class="state-emoji">⚠️</div><div class="state-text">載入失敗<br><small style="font-size:0.76rem">${e.message}</small></div></div>`;
+    feed.innerHTML = `<div class="state-msg"><div class="state-emoji">⚠️</div><div class="state-text">載入失敗<br><small>${e.message}</small></div></div>`;
   });
 }
 
@@ -488,27 +522,37 @@ function renderFeed(meals) {
     feed.innerHTML = `<div class="state-msg"><div class="state-emoji">🍽️</div><div class="state-text">還沒有紀錄<br>按下右下角的 ＋ 開始記錄！</div></div>`;
     return;
   }
+
+  // group by date
   const groups = {};
   meals.forEach(m => {
     const d = m.date || dateStr(m.ts?.toDate() || new Date());
     if (!groups[d]) groups[d] = [];
     groups[d].push(m);
   });
+
   const showUser = viewMode === 'all';
+  // 餐別排序
+  const typeOrder = { '早餐':0,'午餐':1,'晚餐':2,'點心':3 };
+
   let html = '';
   for (const [date, list] of Object.entries(groups)) {
+    // 同一天按餐別排序
+    list.sort((a,b) => (typeOrder[a.mealType]??9) - (typeOrder[b.mealType]??9));
     html += `<div class="date-group"><div class="date-label">${dateLabel(date)}</div>`;
     for (const m of list) {
-      const time  = m.ts ? timeStr(m.ts.toDate()) : '';
-      const name  = esc(m.mealName || '');
-      const user  = esc(m.user || '');
-      const emoji = m.emoji || '🍽️';
+      const name     = esc(m.mealName || '');
+      const user     = esc(m.user || '');
+      const emoji    = m.emoji    || '🍽️';
+      const mealType = m.mealType || '';
+      const time     = m.ts ? timeStr(m.ts.toDate()) : '';
       html += `<div class="meal-card">
         <div class="meal-icon">${emoji}</div>
         <div class="meal-info">
           <div class="meal-name">${name}</div>
           <div class="meal-meta">
-            ${showUser ? `<span class="meal-user-tag">${user}</span>` : ''}
+            ${mealType ? `<span class="meal-tag tag-${mealType}">${mealType}</span>` : ''}
+            ${showUser ? `<span class="meal-tag tag-user">${user}</span>` : ''}
             <span class="meal-time">${time}</span>
           </div>
         </div>
@@ -519,10 +563,36 @@ function renderFeed(meals) {
   feed.innerHTML = html;
 }
 
+// ══ ADD MODAL ══
+function selectMealType(btn) {
+  document.querySelectorAll('.meal-type-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedMealType = btn.dataset.type;
+}
+
+function selectDate(mode) {
+  selectedDateMode = mode;
+  document.getElementById('btn-today').classList.toggle('selected', mode === 'today');
+  document.getElementById('btn-yesterday').classList.toggle('selected', mode === 'yesterday');
+  if (mode !== 'custom') document.getElementById('date-picker').value = '';
+}
+
+function getSelectedDate() {
+  if (selectedDateMode === 'today')     return dateStr(new Date());
+  if (selectedDateMode === 'yesterday') return dateStr(new Date(Date.now()-86400000));
+  return document.getElementById('date-picker').value || dateStr(new Date());
+}
+
 function openModal() {
   document.getElementById('meal-name').value = '';
-  selectedEmoji = '🍽️';
+  selectedEmoji    = '🍽️';
+  selectedMealType = '午餐';
+  selectedDateMode = 'today';
   document.querySelectorAll('.emoji-btn').forEach((b,i) => b.classList.toggle('selected', i === 0));
+  document.querySelectorAll('.meal-type-btn').forEach(b => b.classList.toggle('selected', b.dataset.type === '午餐'));
+  document.getElementById('btn-today').classList.add('selected');
+  document.getElementById('btn-yesterday').classList.remove('selected');
+  document.getElementById('date-picker').value = '';
   document.getElementById('add-overlay').classList.add('show');
   setTimeout(() => document.getElementById('meal-name').focus(), 300);
 }
@@ -535,10 +605,15 @@ async function submitMeal() {
   const btn = document.getElementById('submit-btn');
   btn.disabled = true; btn.textContent = '儲存中…';
   try {
-    const now = new Date();
+    const now  = new Date();
+    const date = getSelectedDate();
     await db.collection('meals').add({
-      user: curUser, mealName: name, emoji: selectedEmoji,
-      ts: firebase.firestore.Timestamp.fromDate(now), date: dateStr(now)
+      user:     curUser,
+      mealName: name,
+      emoji:    selectedEmoji,
+      mealType: selectedMealType,
+      date:     date,
+      ts:       firebase.firestore.Timestamp.fromDate(now)
     });
     closeModal(); showToast('記錄成功 🎉');
   } catch(e) {
@@ -548,24 +623,29 @@ async function submitMeal() {
   }
 }
 
+// ══ NAMES DIALOG ══
 function showNamesDialog() {
   document.getElementById('n1-input').value = uName1;
   document.getElementById('n2-input').value = uName2;
   document.getElementById('names-dialog').classList.add('show');
 }
 function closeNamesDialog() { document.getElementById('names-dialog').classList.remove('show'); }
-function saveNames() {
+async function saveNames() {
   const n1 = document.getElementById('n1-input').value.trim() || '使用者一';
   const n2 = document.getElementById('n2-input').value.trim() || '使用者二';
-  uName1 = n1; uName2 = n2;
-  localStorage.setItem('fd_n1', n1); localStorage.setItem('fd_n2', n2);
-  closeNamesDialog(); refreshPickerNames(); showToast('名字已更新');
+  try {
+    await db.collection('config').doc('names').set({ name1: n1, name2: n2 });
+    closeNamesDialog(); showToast('名字已更新 ✓');
+  } catch(e) {
+    showToast('儲存失敗，請再試');
+  }
 }
 
-function dateStr(d)  { return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
-function timeStr(d)  { return `${p(d.getHours())}:${p(d.getMinutes())}`; }
-function p(n)        { return String(n).padStart(2,'0'); }
-function esc(s)      { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// ══ HELPERS ══
+function dateStr(d) { return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
+function timeStr(d) { return `${p(d.getHours())}:${p(d.getMinutes())}`; }
+function p(n)       { return String(n).padStart(2,'0'); }
+function esc(s)     { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function dateLabel(ds) {
   const today     = dateStr(new Date());
