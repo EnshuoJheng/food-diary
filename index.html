@@ -460,20 +460,26 @@ function setView(mode) {
   loadMeals();
 }
 
-async function loadMeals() {
+let unsubscribe = null; // 用來取消監聽
+
+function loadMeals() {
   const feed = document.getElementById('feed');
   feed.innerHTML = '<div class="state-msg"><div class="state-emoji">⌛</div><div class="state-text">載入中…</div></div>';
-  try {
-    let ref = db.collection('meals').orderBy('ts', 'desc').limit(100);
-    if (viewMode === 'mine') ref = db.collection('meals').where('user','==',curUser).orderBy('ts','desc').limit(60);
-    const snap = await ref.get();
+
+  // 取消上一次的監聽
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+
+  let ref = db.collection('meals').orderBy('ts', 'desc').limit(100);
+  if (viewMode === 'mine') ref = db.collection('meals').where('user','==',curUser).orderBy('ts','desc').limit(60);
+
+  unsubscribe = ref.onSnapshot(snap => {
     const meals = [];
     snap.forEach(d => meals.push({ id: d.id, ...d.data() }));
     renderFeed(meals);
-  } catch(e) {
+  }, e => {
     console.error(e);
     feed.innerHTML = `<div class="state-msg"><div class="state-emoji">⚠️</div><div class="state-text">載入失敗<br><small style="font-size:0.76rem">${e.message}</small></div></div>`;
-  }
+  });
 }
 
 function renderFeed(meals) {
@@ -534,7 +540,7 @@ async function submitMeal() {
       user: curUser, mealName: name, emoji: selectedEmoji,
       ts: firebase.firestore.Timestamp.fromDate(now), date: dateStr(now)
     });
-    closeModal(); showToast('記錄成功 🎉'); loadMeals();
+    closeModal(); showToast('記錄成功 🎉');
   } catch(e) {
     console.error(e); showToast('儲存失敗，請再試');
   } finally {
